@@ -1,0 +1,68 @@
+#! /usr/bin/env python3
+# db2ooxml — Converts from DocBook to Office OpenXML documents
+
+import argparse
+import os.path
+import re
+import sys
+
+import lxml.etree
+
+
+atelo_ns = 'http://atelo.org/ns/db2ooxml'
+
+def ends_with(ctx, a, suffix):
+    print(a, suffix)
+    return a.endswith(suffix)
+
+def starts_with(ctx, a, suffix):
+    return a.startswith(suffix)
+
+def single_spaces(ctx, a):
+    return re.sub(r'\s+', ' ', str(a[0]))
+
+if __name__ == '__main__':
+    ap = argparse.ArgumentParser(description='DocBook to OpenXML converter')
+    ap.add_argument('input', metavar='DBDOC', nargs=1,
+                    help='input DocBook document')
+    ap.add_argument('-o', '--output', default=None,
+                    help='output WordML document')
+    args = ap.parse_args()
+
+    # Search for the XSLT stylesheets
+    dirs = [os.path.dirname(os.path.dirname(os.path.realpath(__file__)))]
+    basedir = None
+    for path in dirs:
+        if os.path.exists(os.path.join(path, 'xslt')):
+            basedir = path
+            break
+    if basedir is None:
+       exit('error: could not find the XSLT stylesheets') 
+
+    # Load the XSLT stylesheets
+    xslt_path = os.path.join(basedir, 'xslt', 'docbook2wordml.xsl')
+    xslt_xml = lxml.etree.parse(xslt_path)
+    transform = lxml.etree.XSLT(xslt_xml)
+
+    # Load the DocBook document
+    db_doc = lxml.etree.parse(args.input[0])
+
+    # Register extensions
+    ns = lxml.etree.FunctionNamespace(atelo_ns)
+    ns.prefix = 'atl'
+    ns['single-spaces'] = single_spaces
+    ns['starts-with'] = starts_with
+    ns['ends-with'] = ends_with
+    #e = lxml.etree.XPathEvaluator(db_doc)
+    #print(e("atl:starts-with(' hello ', ' ')"))
+    #print(e("atl:starts-with('h ello  x', ' ')"))
+
+    # Transform the DocBook document to WordML
+    wml_doc = transform(db_doc)
+
+    # Write the generated WordML document
+    if args.output is None:
+        output = sys.stdout
+    else:
+        output = open(args.output, 'w')
+    output.write(lxml.etree.tostring(wml_doc, encoding=str))
