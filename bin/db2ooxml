@@ -6,17 +6,31 @@ import os.path
 import re
 import sys
 
+#import PIL.Image
+
 import lxml.etree
 
 
 atelo_ns = 'http://atelo.org/ns/db2ooxml'
 
 def ends_with(ctx, a, suffix):
-    print(a, suffix)
     return a.endswith(suffix)
 
 def starts_with(ctx, a, suffix):
     return a.startswith(suffix)
+
+def emu_height(ctx, a, width):
+    path = a[0]
+    if path.endswith('.svg'):
+        svg = lxml.etree.parse(path)
+        root = svg.getroot()
+        w = float(root.get('width'))
+        h = float(root.get('height'))
+        del svg
+        return int(h*width/w)
+    else:
+        print('warning: unhandled image type for', path, file=sys.stderr)
+        return width
 
 def single_spaces(ctx, a):
     return re.sub(r'\s+', ' ', str(a[0]))
@@ -53,7 +67,9 @@ if __name__ == '__main__':
     ns['single-spaces'] = single_spaces
     ns['starts-with'] = starts_with
     ns['ends-with'] = ends_with
+    ns['emu-height'] = emu_height
     #e = lxml.etree.XPathEvaluator(db_doc)
+    #print(e("atl:starts-with(' hello ', ' ')"))
     #print(e("atl:starts-with(' hello ', ' ')"))
     #print(e("atl:starts-with('h ello  x', ' ')"))
 

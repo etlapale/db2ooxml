@@ -1,11 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<xsl:stylesheet version="1.0"
-		xmlns:db="http://docbook.org/ns/docbook"
-		xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-		xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"
-		xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
-		xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math"
-		xmlns:atl="http://atelo.org/ns/db2ooxml">
+<xsl:stylesheet
+    version="1.0"
+    xmlns:db="http://docbook.org/ns/docbook"
+    xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+    xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+    xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+    xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
+    xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"
+    xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
+    xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math"
+    xmlns:atl="http://atelo.org/ns/db2ooxml">
   <xsl:output method="xml" indent="no" standalone="yes"/>
 
   <xsl:include href="mml2omml.xsl"/>
@@ -97,7 +101,7 @@
 		       w:name="{db:title/@xml:id}"/>
       </xsl:if>
     </w:p>
-    <xsl:apply-templates select="db:sect2|db:para"/>
+    <xsl:apply-templates select="db:sect2|db:para|db:figure"/>
   </xsl:template>
 
   <xsl:template match="db:sect2">
@@ -120,7 +124,7 @@
 		       w:name="{db:title/@xml:id}"/>
       </xsl:if>
     </w:p>
-    <xsl:apply-templates select="db:para"/>
+    <xsl:apply-templates select="db:para|db:figure"/>
   </xsl:template>
 
   <xsl:template match="db:bibliography">
@@ -204,4 +208,61 @@
     </w:p>
   </xsl:template>
 
+  <xsl:template match="db:figure">
+    <w:p>
+    <w:r>
+    <w:drawing>
+      <wp:inline distT="0" distB="0" distL="0" distR="0">
+	<wp:extent cx="5943600">
+	  <xsl:attribute name="cy">
+	    <xsl:value-of select="atl:emu-height(db:mediaobject/db:imageobject/db:imagedata/@fileref,5943600)"/>
+	  </xsl:attribute>
+	</wp:extent>
+	<wp:docPr id="1" name="Picture 1" />
+	<a:graphic>
+	  <a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">
+	    <pic:pic>
+	      <pic:nvPicPr>
+		<pic:cNvPr id="0" name="Picture 1" />
+		<pic:cNvPicPr />
+	      </pic:nvPicPr>
+	      <pic:blipFill>
+		<a:blip r:embed="rMediaModel" />
+		<a:stretch>
+		  <a:fillRect />
+		</a:stretch>
+	      </pic:blipFill>
+	      <pic:spPr>
+		<a:xfrm>
+		  <a:off x="0" y="0" />
+		  <a:ext cx="5943600">
+		    <xsl:attribute name="cy">
+		      <xsl:value-of select="atl:emu-height(db:mediaobject/db:imageobject/db:imagedata/@fileref,5943600)"/>
+		    </xsl:attribute>
+		  </a:ext>
+		</a:xfrm>
+		<a:prstGeom prst="rect">
+		  <a:avLst />
+		</a:prstGeom>
+	      </pic:spPr>
+	    </pic:pic>
+	  </a:graphicData>
+	</a:graphic>
+      </wp:inline>
+    </w:drawing>
+    </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr><w:pStyle w:val="FigureCaption"/></w:pPr>
+      <w:r>
+	<w:rPr><w:b/></w:rPr>
+	<w:t xml:space="preserve">
+	  <xsl:text>Figure </xsl:text>
+	  <xsl:number level="multiple" count="db:figure"/>
+	  <xsl:text> </xsl:text>
+	</w:t>
+      </w:r>
+      <xsl:apply-templates select="db:title"/>
+    </w:p>
+  </xsl:template>
 </xsl:stylesheet>
