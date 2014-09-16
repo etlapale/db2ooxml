@@ -22,8 +22,14 @@ def ends_with(ctx, a, suffix):
 def starts_with(ctx, a, suffix):
     return a.startswith(suffix)
 
+def emu(ctx, a):
+    if isinstance(a,list):
+        a = float(a[0])
+    return int(a*914400)
+
 def emu_height(ctx, a, width):
     path = a[0]
+    width = float(width[0])
     if path.endswith('.svg'):
         svg = lxml.etree.parse(path)
         root = svg.getroot()
@@ -80,6 +86,7 @@ if __name__ == '__main__':
     ns['single-spaces'] = single_spaces
     ns['starts-with'] = starts_with
     ns['ends-with'] = ends_with
+    ns['emu'] = emu
     ns['emu-height'] = emu_height
     ns['media-ref'] = media_ref
     ns['upper-case'] = upper_case

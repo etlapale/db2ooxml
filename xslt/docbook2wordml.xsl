@@ -303,16 +303,30 @@
   </xsl:template>
 
   <xsl:template match="db:figure">
+    <xsl:variable name="imgdat" select="db:mediaobject/db:imageobject/db:imagedata"/>
+    <xsl:variable name="wemu">
+      <xsl:choose>
+	<xsl:when test="$imgdat/@width">
+	  <xsl:value-of select="atl:emu($imgdat/@width)"/>
+	</xsl:when>
+	<xsl:otherwise>
+	  <xsl:value-of select="atl:emu(6.788)"/>
+	</xsl:otherwise>
+      </xsl:choose>
+    </xsl:variable>
     <w:p>
+      <w:pPr>
+	<w:jc w:val="center"/>
+      </w:pPr>
     <xsl:if test="@xml:id">
       <w:bookmarkStart w:id="{@xml:id}" w:name="{@xml:id}"/>
     </xsl:if>
     <w:r>
     <w:drawing>
       <wp:inline distT="0" distB="0" distL="0" distR="0">
-	<wp:extent cx="5943600">
+	<wp:extent cx="{$wemu}">
 	  <xsl:attribute name="cy">
-	    <xsl:value-of select="atl:emu-height(db:mediaobject/db:imageobject/db:imagedata/@fileref,5943600)"/>
+	    <xsl:value-of select="atl:emu-height($imgdat/@fileref,$wemu)"/>
 	  </xsl:attribute>
 	</wp:extent>
 	<wp:docPr id="1" name="Picture 1" />
@@ -326,7 +340,7 @@
 	      <pic:blipFill>
 		<a:blip>
 		  <xsl:attribute name="r:embed">
-		    <xsl:value-of select="atl:media-ref(db:mediaobject/db:imageobject/db:imagedata/@fileref)"/>
+		    <xsl:value-of select="atl:media-ref($imgdat/@fileref)"/>
 		  </xsl:attribute>
 		</a:blip>
 		<a:stretch>
@@ -336,9 +350,9 @@
 	      <pic:spPr>
 		<a:xfrm>
 		  <a:off x="0" y="0" />
-		  <a:ext cx="5943600">
+		  <a:ext cx="{$wemu}">
 		    <xsl:attribute name="cy">
-		      <xsl:value-of select="atl:emu-height(db:mediaobject/db:imageobject/db:imagedata/@fileref,5943600)"/>
+		      <xsl:value-of select="atl:emu-height($imgdat/@fileref,$wemu)"/>
 		    </xsl:attribute>
 		  </a:ext>
 		</a:xfrm>
