@@ -32,6 +32,12 @@ def emu_height(ctx, a, width):
         print('warning: unhandled image type for', path, file=sys.stderr)
         return width
 
+def media_ref(ctx, a):
+    path = a[0]
+    name = os.path.splitext(os.path.basename(path))[0]
+    ref = re.sub(r'(^|-)([a-z])', lambda m: m.group(2).upper(), name)
+    return 'rMedia'+ref
+
 def single_spaces(ctx, a):
     return re.sub(r'\s+', ' ', str(a[0]))
 
@@ -53,6 +59,10 @@ if __name__ == '__main__':
     if basedir is None:
        exit('error: could not find the XSLT stylesheets') 
 
+    # Load the first-pass XSLT stylesheets
+    xslt_path = os.path.join(basedir, 'xslt', 'db2wml-first.xsl')
+    xslt_xml = lxml.etree.parse(xslt_path)
+    first_pass = lxml.etree.XSLT(xslt_xml)
     # Load the XSLT stylesheets
     xslt_path = os.path.join(basedir, 'xslt', 'docbook2wordml.xsl')
     xslt_xml = lxml.etree.parse(xslt_path)
@@ -68,13 +78,18 @@ if __name__ == '__main__':
     ns['starts-with'] = starts_with
     ns['ends-with'] = ends_with
     ns['emu-height'] = emu_height
+    ns['media-ref'] = media_ref
     #e = lxml.etree.XPathEvaluator(db_doc)
     #print(e("atl:starts-with(' hello ', ' ')"))
     #print(e("atl:starts-with(' hello ', ' ')"))
     #print(e("atl:starts-with('h ello  x', ' ')"))
 
+    # First pass
+    numdb_doc = first_pass(db_doc)
+    print(numdb_doc)
+
     # Transform the DocBook document to WordML
-    wml_doc = transform(db_doc)
+    wml_doc = transform(numdb_doc)
 
     # Write the generated WordML document
     if args.output is None:

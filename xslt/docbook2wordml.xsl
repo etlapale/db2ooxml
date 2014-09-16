@@ -101,7 +101,7 @@
 		       w:name="{db:title/@xml:id}"/>
       </xsl:if>
     </w:p>
-    <xsl:apply-templates select="db:sect2|db:para|db:figure"/>
+    <xsl:apply-templates select="db:sect2|db:para|db:figure|db:equation"/>
   </xsl:template>
 
   <xsl:template match="db:sect2">
@@ -124,7 +124,7 @@
 		       w:name="{db:title/@xml:id}"/>
       </xsl:if>
     </w:p>
-    <xsl:apply-templates select="db:para|db:figure"/>
+    <xsl:apply-templates select="db:para|db:figure|db:equation"/>
   </xsl:template>
 
   <xsl:template match="db:bibliography">
@@ -190,6 +190,13 @@
     </w:hyperlink>
   </xsl:template>
 
+  <xsl:template match="db:xref">
+    <xsl:param name="target" select="key('id', @linkend)"/>
+    <w:hyperlink w:anchor="{@linkend}">
+      <w:r><w:t>(<xsl:value-of select="//db:equation[@xml:id=current()/@linkend]/@atl:numbered"/>)</w:t></w:r>
+    </w:hyperlink>
+  </xsl:template>
+
   <xsl:template match="db:inlineequation">
     <m:oMath>
       <xsl:apply-templates mode="mml"/>
@@ -202,9 +209,26 @@
       <m:oMath>
 	<xsl:apply-templates mode="mml"/>
       </m:oMath>
+      <xsl:if test="@xml:id">
+        <w:bookmarkStart w:id="{@xml:id}" w:name="{@xml:id}"/>
+      </xsl:if>
       <w:r>
-	<w:t>(<xsl:number level="multiple" count="db:equation"/>)</w:t>
+	<w:t>
+	  <xsl:text>(</xsl:text>
+	  <xsl:choose>
+	    <xsl:when test="@atl:number">
+	      <xsl:value-of select="@atl:number"/>
+	    </xsl:when>
+	    <xsl:otherwise>
+	      <xsl:number level="any" count="db:equation"/>
+	    </xsl:otherwise>
+	  </xsl:choose>
+	  <xsl:text>)</xsl:text>
+	</w:t>
       </w:r>
+      <xsl:if test="@xml:id">
+        <w:bookmarkEnd w:id="{@xml:id}" w:name="{@xml:id}"/>
+      </xsl:if>
     </w:p>
   </xsl:template>
 
@@ -227,7 +251,11 @@
 		<pic:cNvPicPr />
 	      </pic:nvPicPr>
 	      <pic:blipFill>
-		<a:blip r:embed="rMediaModel" />
+		<a:blip>
+		  <xsl:attribute name="r:embed">
+		    <xsl:value-of select="atl:media-ref(db:mediaobject/db:imageobject/db:imagedata/@fileref)"/>
+		  </xsl:attribute>
+		</a:blip>
 		<a:stretch>
 		  <a:fillRect />
 		</a:stretch>
