@@ -83,25 +83,41 @@
     </xsl:for-each>
   </xsl:template>
 
+  <!-- Begin a bookmark for an id-ed element -->
+  <xsl:template name="start-bookmark">
+    <xsl:if test="@xml:id">
+      <w:bookmarkStart w:id="{@xml:id}" w:name="{@xml:id}"/>
+    </xsl:if>
+  </xsl:template>
+
+  <!-- Finish a bookmark for an id-ed element -->
+  <xsl:template name="end-bookmark">
+    <xsl:if test="@xml:id">
+      <w:bookmarkEnd w:id="{@xml:id}" w:name="{@xml:id}"/>
+    </xsl:if>
+  </xsl:template>
+
+  <!-- Higher level section -->
   <xsl:template match="db:sect1">
+    <!-- Find the section number -->
+    <xsl:variable name="secnum">
+      <xsl:value-of select="1+count(preceding::db:sect1)"/>
+    </xsl:variable>
+
+    <!-- Section heading -->
     <w:p>
       <w:pPr><w:pStyle w:val="Heading1"/></w:pPr>
-      <xsl:if test="db:title/@xml:id">
-	<w:bookmarkStart w:id="{db:title/@xml:id}"
-			 w:name="{db:title/@xml:id}"/>
-      </xsl:if>
+      <xsl:call-template name="start-bookmark"/>
       <w:r><w:t>
-	<!-- TODO: we should use numbering properties instead of that -->
-        <xsl:number level="multiple" count="db:sect1"/>
+	<xsl:value-of select="$secnum"/>
 	<xsl:text> </xsl:text>
 	<xsl:value-of select="db:title"/>
       </w:t></w:r>
-      <xsl:if test="db:title/@xml:id">
-	<w:bookmarkEnd w:id="{db:title/@xml:id}"
-		       w:name="{db:title/@xml:id}"/>
-      </xsl:if>
+      <xsl:call-template name="end-bookmark"/>
     </w:p>
-    <xsl:apply-templates select="db:sect2|db:para|db:figure|db:equation|db:table"/>
+
+    <!-- Section content -->
+    <!--<xsl:apply-templates select="db:sect2|db:para|db:figure|db:equation|db:table"/>-->
   </xsl:template>
 
   <xsl:template match="db:sect2">
