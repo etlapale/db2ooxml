@@ -22,4 +22,24 @@
     </xsl:copy>
   </xsl:template>
 
+  <xsl:template match="db:figure">
+    <xsl:copy>
+      <xsl:attribute name="atl:numbered">
+        <xsl:number level="any" count="db:figure"/>
+      </xsl:attribute>
+      <xsl:apply-templates select="@*"/>
+      <xsl:apply-templates/>
+    </xsl:copy>
+  </xsl:template>
+
+  <xsl:template match="db:table">
+    <xsl:copy>
+      <xsl:attribute name="atl:numbered">
+        <xsl:number level="any" count="db:table"/>
+      </xsl:attribute>
+      <xsl:apply-templates select="@*"/>
+      <xsl:apply-templates/>
+    </xsl:copy>
+  </xsl:template>
+
 </xsl:stylesheet>

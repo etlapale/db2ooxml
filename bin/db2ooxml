@@ -13,6 +13,9 @@ import lxml.etree
 
 atelo_ns = 'http://atelo.org/ns/db2ooxml'
 
+def upper_case(ctx, a):
+    return a.upper()
+
 def ends_with(ctx, a, suffix):
     return a.endswith(suffix)
 
@@ -79,6 +82,7 @@ if __name__ == '__main__':
     ns['ends-with'] = ends_with
     ns['emu-height'] = emu_height
     ns['media-ref'] = media_ref
+    ns['upper-case'] = upper_case
     #e = lxml.etree.XPathEvaluator(db_doc)
     #print(e("atl:starts-with(' hello ', ' ')"))
     #print(e("atl:starts-with(' hello ', ' ')"))
@@ -86,7 +90,7 @@ if __name__ == '__main__':
 
     # First pass
     numdb_doc = first_pass(db_doc)
-    print(numdb_doc)
+    #print(numdb_doc)
 
     # Transform the DocBook document to WordML
     wml_doc = transform(numdb_doc)

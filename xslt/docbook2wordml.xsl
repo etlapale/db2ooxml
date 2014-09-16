@@ -101,7 +101,7 @@
 		       w:name="{db:title/@xml:id}"/>
       </xsl:if>
     </w:p>
-    <xsl:apply-templates select="db:sect2|db:para|db:figure|db:equation"/>
+    <xsl:apply-templates select="db:sect2|db:para|db:figure|db:equation|db:table"/>
   </xsl:template>
 
   <xsl:template match="db:sect2">
@@ -124,7 +124,7 @@
 		       w:name="{db:title/@xml:id}"/>
       </xsl:if>
     </w:p>
-    <xsl:apply-templates select="db:para|db:figure|db:equation"/>
+    <xsl:apply-templates select="db:para|db:figure|db:equation|db:table"/>
   </xsl:template>
 
   <xsl:template match="db:bibliography">
@@ -191,9 +191,28 @@
   </xsl:template>
 
   <xsl:template match="db:xref">
-    <xsl:param name="target" select="key('id', @linkend)"/>
+    <xsl:variable name="target"
+		  select="//*[@xml:id=current()/@linkend]"/>
+    <xsl:variable name="number"
+		  select="$target/@atl:numbered"/>
     <w:hyperlink w:anchor="{@linkend}">
-      <w:r><w:t>(<xsl:value-of select="//db:equation[@xml:id=current()/@linkend]/@atl:numbered"/>)</w:t></w:r>
+      <w:r>
+	<xsl:choose>
+	  <xsl:when test="name($target) = 'equation'">
+            <w:t>(<xsl:value-of select="$number"/>)</w:t>
+	  </xsl:when>
+	  <xsl:otherwise>
+            <w:t>
+	      <xsl:value-of
+		  select="atl:upper-case(substring(name($target),1,1))"/>
+	      <xsl:value-of
+		  select="substring(name($target),2)"/>
+	      <xsl:text> </xsl:text>
+	      <xsl:value-of select="$number"/>
+	    </w:t>
+	  </xsl:otherwise>
+	</xsl:choose>
+      </w:r>
     </w:hyperlink>
   </xsl:template>
 
@@ -232,8 +251,62 @@
     </w:p>
   </xsl:template>
 
+  <xsl:template match="db:table">
+    <w:tbl>
+      <w:tblPr>
+	<w:tblW w:w="9972" w:type="dxa"/>
+      </w:tblPr>
+      <xsl:apply-templates select="db:tgroup"/>
+    </w:tbl>
+    <w:p>
+      <w:pPr><w:pStyle w:val="TableCaption"/></w:pPr>
+      <w:r>
+	<w:rPr><w:b/></w:rPr>
+	<w:t xml:space="preserve">
+	  <xsl:text>Table </xsl:text>
+	  <xsl:number level="multiple" count="db:table"/>
+	  <xsl:text> </xsl:text>
+	</w:t>
+      </w:r>
+      <xsl:apply-templates select="db:title"/>
+    </w:p>
+  </xsl:template>
+
+  <xsl:template match="db:tgroup">
+    <xsl:apply-templates select="db:thead|db:tbody"/>
+  </xsl:template>
+
+  <xsl:template match="db:thead|db:tbody">
+    <xsl:apply-templates select="db:row"/>
+  </xsl:template>
+
+  <xsl:template match="db:row">
+    <w:tr>
+      <xsl:apply-templates select="db:entry"/>
+    </w:tr>
+  </xsl:template>
+
+  <xsl:template match="db:entry">
+    <w:tc><w:p>
+      <w:pPr>
+	<xsl:choose>
+	  <xsl:when test="ancestor::db:thead">
+	    <w:pStyle w:val="TableHead"/>
+	  </xsl:when>
+	  <xsl:otherwise>
+	    <w:pStyle w:val="TableCell"/>
+	  </xsl:otherwise>
+	</xsl:choose>
+      </w:pPr>
+      <xsl:apply-templates/>
+    </w:p></w:tc>
+  </xsl:template>
+
   <xsl:template match="db:figure">
     <w:p>
+    <xsl:if test="@xml:id">
+      <w:bookmarkStart w:id="{@xml:id}" w:name="{@xml:id}"/>
+    </xsl:if>
     <w:r>
     <w:drawing>
       <wp:inline distT="0" distB="0" distL="0" distR="0">
@@ -279,6 +352,9 @@
       </wp:inline>
     </w:drawing>
     </w:r>
+    <xsl:if test="@xml:id">
+      <w:bookmarkEnd w:id="{@xml:id}" w:name="{@xml:id}"/>
+    </xsl:if>
     </w:p>
     <w:p>
       <w:pPr><w:pStyle w:val="FigureCaption"/></w:pPr>
@@ -286,7 +362,7 @@
 	<w:rPr><w:b/></w:rPr>
 	<w:t xml:space="preserve">
 	  <xsl:text>Figure </xsl:text>
-	  <xsl:number level="multiple" count="db:figure"/>
+	  <xsl:number level="any" count="db:figure"/>
 	  <xsl:text> </xsl:text>
 	</w:t>
       </w:r>
