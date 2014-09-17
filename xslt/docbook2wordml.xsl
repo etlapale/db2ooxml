@@ -19,10 +19,8 @@
       <w:body>
 	<!-- Frontmatter -->
         <xsl:apply-templates select="db:info"/>
-	<!-- Document sections -->
-        <xsl:apply-templates select="db:sect1"/>
-	<!-- Backmatter -->
-        <xsl:apply-templates select="db:bibliography"/>
+	<!-- Content -->
+        <xsl:apply-templates select="db:sect1|db:bibliography"/>
 	<!-- Section format -->
 	<w:sectPr>
 	  <w:type w:val="nextPage"/>
@@ -99,48 +97,37 @@
 
   <!-- Higher level section -->
   <xsl:template match="db:sect1">
-    <!-- Find the section number -->
-    <xsl:variable name="secnum">
-      <xsl:value-of select="1+count(preceding::db:sect1)"/>
-    </xsl:variable>
-
-    <!-- Section heading -->
+    <!-- Heading -->
     <w:p>
       <w:pPr><w:pStyle w:val="Heading1"/></w:pPr>
       <xsl:call-template name="start-bookmark"/>
       <w:r><w:t>
-	<xsl:value-of select="$secnum"/>
+        <xsl:number level="multiple" count="db:sect1"/>
 	<xsl:text> </xsl:text>
 	<xsl:value-of select="db:title"/>
       </w:t></w:r>
       <xsl:call-template name="end-bookmark"/>
     </w:p>
-
-    <!-- Section content -->
-    <!--<xsl:apply-templates select="db:sect2|db:para|db:figure|db:equation|db:table"/>-->
+    <!-- Content -->
+    <xsl:apply-templates select="db:equation|db:figure|db:para|db:sect2|db:table"/>
   </xsl:template>
 
   <xsl:template match="db:sect2">
+    <!-- Heading -->
     <w:p>
       <w:pPr><w:pStyle w:val="Heading2"/></w:pPr>
-      <xsl:if test="db:title/@xml:id">
-	<w:bookmarkStart w:id="{db:title/@xml:id}"
-			 w:name="{db:title/@xml:id}"/>
-      </xsl:if>
+      <xsl:call-template name="start-bookmark"/>
       <w:r><w:t>
-	<!-- TODO: we should use numbering properties instead of that -->
         <xsl:number level="multiple" count="db:sect1"/>
 	<xsl:text>.</xsl:text>
         <xsl:number level="multiple" count="db:sect2"/>
 	<xsl:text> </xsl:text>
 	<xsl:value-of select="db:title"/>
       </w:t></w:r>
-      <xsl:if test="db:title/@xml:id">
-	<w:bookmarkEnd w:id="{db:title/@xml:id}"
-		       w:name="{db:title/@xml:id}"/>
-      </xsl:if>
+      <xsl:call-template name="end-bookmark"/>
     </w:p>
-    <xsl:apply-templates select="db:para|db:figure|db:equation|db:table"/>
+    <!-- Content -->
+    <xsl:apply-templates select="db:equation|db:figure|db:para|db:table"/>
   </xsl:template>
 
   <xsl:template match="db:bibliography">
@@ -209,8 +196,9 @@
   <xsl:template match="db:xref">
     <xsl:variable name="target"
 		  select="//*[@xml:id=current()/@linkend]"/>
-    <xsl:variable name="number"
-		  select="$target/@atl:numbered"/>
+    <xsl:variable
+	name="number"
+	select="1+count($target/preceding::*[name()=name($target)])"/>
     <w:hyperlink w:anchor="{@linkend}">
       <w:r>
 	<xsl:choose>
@@ -244,26 +232,11 @@
       <m:oMath>
 	<xsl:apply-templates mode="mml"/>
       </m:oMath>
-      <xsl:if test="@xml:id">
-        <w:bookmarkStart w:id="{@xml:id}" w:name="{@xml:id}"/>
-      </xsl:if>
+      <xsl:call-template name="start-bookmark"/>
       <w:r>
-	<w:t>
-	  <xsl:text>(</xsl:text>
-	  <xsl:choose>
-	    <xsl:when test="@atl:number">
-	      <xsl:value-of select="@atl:number"/>
-	    </xsl:when>
-	    <xsl:otherwise>
-	      <xsl:number level="any" count="db:equation"/>
-	    </xsl:otherwise>
-	  </xsl:choose>
-	  <xsl:text>)</xsl:text>
-	</w:t>
+	<w:t>(<xsl:number level="any" count="db:equation"/>)</w:t>
       </w:r>
-      <xsl:if test="@xml:id">
-        <w:bookmarkEnd w:id="{@xml:id}" w:name="{@xml:id}"/>
-      </xsl:if>
+      <xsl:call-template name="end-bookmark"/>
     </w:p>
   </xsl:template>
 
