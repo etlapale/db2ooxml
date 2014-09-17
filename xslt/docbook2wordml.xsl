@@ -12,9 +12,71 @@
     xmlns:atl="http://atelo.org/ns/db2ooxml">
   <xsl:output method="xml" indent="no" standalone="yes"/>
 
+  <xsl:param name="paper.type" select="'letter'"/>
+  <xsl:param name="page.width">
+    <xsl:choose>
+      <xsl:when test="atl:ends-with($paper.type,'letter')">9.5in</xsl:when>
+      <xsl:when test="atl:lower-case($paper.type)='a0'">84.1cm</xsl:when>
+      <xsl:when test="atl:lower-case($paper.type)='a1'">59.4cm</xsl:when>
+      <xsl:when test="atl:lower-case($paper.type)='a2'">42cm</xsl:when>
+      <xsl:when test="atl:lower-case($paper.type)='a3'">29.7cm</xsl:when>
+      <xsl:when test="atl:lower-case($paper.type)='a5'">14.8cm</xsl:when>
+      <xsl:when test="atl:lower-case($paper.type)='a6'">10.5cm</xsl:when>
+      <xsl:otherwise>21cm</xsl:otherwise>
+    </xsl:choose>
+  </xsl:param>
+  <xsl:param name="page.height">
+    <xsl:choose>
+      <xsl:when test="atl:ends-with($paper.type,'letter')">11in</xsl:when>
+      <xsl:when test="atl:lower-case($paper.type)='a0'">118.9cm</xsl:when>
+      <xsl:when test="atl:lower-case($paper.type)='a1'">84.1cm</xsl:when>
+      <xsl:when test="atl:lower-case($paper.type)='a2'">59.4cm</xsl:when>
+      <xsl:when test="atl:lower-case($paper.type)='a3'">42cm</xsl:when>
+      <xsl:when test="atl:lower-case($paper.type)='a5'">21cm</xsl:when>
+      <xsl:when test="atl:lower-case($paper.type)='a6'">14.8cm</xsl:when>
+      <xsl:otherwise>29.7cm</xsl:otherwise>
+    </xsl:choose>
+  </xsl:param>
+
+  <!-- Convert a physical dimension to twips (1/1440 inches). -->
+  <xsl:template name="to-twip">
+    <xsl:param name="size"/>
+    <xsl:variable name="len" select="string-length($size)"/>
+    <xsl:choose>
+      <xsl:when test="atl:ends-with($size,'in')">
+	<xsl:value-of select="1440*substring($size,1,$len - 2)"/>
+      </xsl:when>
+      <xsl:when test="atl:ends-with($size,'pt')">
+	<xsl:value-of select="20*substring($size,1,$len - 2)"/>
+      </xsl:when>
+      <xsl:when test="atl:ends-with($size,'cm')">
+	<xsl:value-of select="567*substring($size,1,$len - 2)"/>
+      </xsl:when>
+      <xsl:when test="atl:ends-with($size,'mm')">
+	<xsl:value-of select="56.7*substring($size,1,$len - 2)"/>
+      </xsl:when>
+      <xsl:otherwise>
+	<xsl:value-of select="$size"/>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
+
+  <!-- MathML to Office MML converter -->
   <xsl:include href="mml2omml.xsl"/>
 
   <xsl:template match="/db:article">
+    <!-- Compute page dimensions -->
+    <xsl:variable name="page-width">
+      <xsl:call-template name="to-twip">
+	<xsl:with-param name="size" select="$page.width"/>
+      </xsl:call-template>
+    </xsl:variable>
+    <xsl:variable name="page-height">
+      <xsl:call-template name="to-twip">
+	<xsl:with-param name="size" select="$page.height"/>
+      </xsl:call-template>
+    </xsl:variable>
+
     <w:document>
       <w:body>
 	<!-- Frontmatter -->
@@ -24,7 +86,7 @@
 	<!-- Section format -->
 	<w:sectPr>
 	  <w:type w:val="nextPage"/>
-	  <w:pgSz w:w="12240" w:h="15840"/>
+	  <w:pgSz w:w="{$page-width}" w:h="{$page-height}"/>
 	  <w:pgMar w:left="1134" w:right="1134"
 		   w:header="0" w:top="1134" w:footer="1134"
 		   w:bottom="1698" w:gutter="0"/>

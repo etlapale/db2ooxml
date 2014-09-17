@@ -16,10 +16,17 @@ atelo_ns = 'http://atelo.org/ns/db2ooxml'
 def upper_case(ctx, a):
     return a.upper()
 
+def lower_case(ctx, a):
+    return a.lower()
+
 def ends_with(ctx, a, suffix):
+    if isinstance(a,list):
+        a = a[0]
     return a.endswith(suffix)
 
 def starts_with(ctx, a, suffix):
+    if isinstance(a,list):
+        a = a[0]
     return a.startswith(suffix)
 
 def emu(ctx, a):
@@ -56,6 +63,8 @@ if __name__ == '__main__':
                     help='input DocBook document')
     ap.add_argument('-o', '--output', default=None,
                     help='output WordML document')
+    ap.add_argument('-p', '--paper-size', default='letter',
+                    help='paper size (letter,a4,a5,…)')
     args = ap.parse_args()
 
     # Search for the XSLT stylesheets
@@ -86,11 +95,12 @@ if __name__ == '__main__':
     ns['emu-height'] = emu_height
     ns['media-ref'] = media_ref
     ns['upper-case'] = upper_case
+    ns['lower-case'] = lower_case
     #e = lxml.etree.XPathEvaluator(db_doc)
     #print(e("atl:starts-with(' hello ', ' ')"))
 
     # Transform the DocBook document to WordML
-    wml_doc = transform(db_doc)
+    wml_doc = transform(db_doc, **{'paper.type': "'%s'"%args.paper_size})
 
     # Write the generated WordML document
     if args.output is None:
