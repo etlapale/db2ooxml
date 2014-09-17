@@ -193,17 +193,47 @@
     </w:hyperlink>
   </xsl:template>
 
+  <xsl:template name="number-of">
+    <xsl:param name="element"/>
+    <xsl:choose>
+      <xsl:when test="name($element)='sect2'">
+	<xsl:call-template name="number-of">
+	  <xsl:with-param name="element" select="$element/.."/>
+	</xsl:call-template>
+	<xsl:text>.</xsl:text>
+	<xsl:value-of select="1+count($element/preceding-sibling::*[name()=name($element)])"/>
+      </xsl:when>
+      <xsl:otherwise>
+	<xsl:value-of
+	    select="1+count($element/preceding::*[name()=name($element)])"/>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
+
   <xsl:template match="db:xref">
     <xsl:variable name="target"
 		  select="//*[@xml:id=current()/@linkend]"/>
-    <xsl:variable
-	name="number"
-	select="1+count($target/preceding::*[name()=name($target)])"/>
+    <xsl:variable name="number">
+      <xsl:choose>
+	<xsl:when test="name($target)='sect1' or
+			name($target)='sect2'">
+	  <xsl:call-template name="number-of">
+	    <xsl:with-param name="element" select="$target"/>
+	  </xsl:call-template>
+	</xsl:when>
+	<xsl:otherwise>
+	  <xsl:value-of select="1+count($target/preceding::*[name()=name($target)])"/>
+	</xsl:otherwise>
+      </xsl:choose>
+    </xsl:variable>
     <w:hyperlink w:anchor="{@linkend}">
       <w:r>
 	<xsl:choose>
 	  <xsl:when test="name($target) = 'equation'">
             <w:t>(<xsl:value-of select="$number"/>)</w:t>
+	  </xsl:when>
+	  <xsl:when test="name($target)='sect1' or name($target)='sect2'">
+            <w:t>Section <xsl:value-of select="$number"/></w:t>
 	  </xsl:when>
 	  <xsl:otherwise>
             <w:t>
