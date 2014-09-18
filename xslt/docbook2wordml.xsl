@@ -9,7 +9,8 @@
     xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"
     xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
     xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math"
-    xmlns:atl="http://atelo.org/ns/db2ooxml">
+    xmlns:atl="http://atelo.org/ns/db2ooxml"
+    xmlns:mml="http://www.w3.org/1998/Math/MathML">
   <xsl:output method="xml" indent="no" standalone="yes"/>
 
   <xsl:param name="paper.type" select="'letter'"/>
@@ -37,6 +38,7 @@
       <xsl:otherwise>29.7cm</xsl:otherwise>
     </xsl:choose>
   </xsl:param>
+  <xsl:param name="page.margin.inner">1in</xsl:param>
 
   <!-- Convert a physical dimension to twips (1/1440 inches). -->
   <xsl:template name="to-twip">
@@ -76,6 +78,11 @@
 	<xsl:with-param name="size" select="$page.height"/>
       </xsl:call-template>
     </xsl:variable>
+    <xsl:variable name="inner-margin">
+      <xsl:call-template name="to-twip">
+	<xsl:with-param name="size" select="$page.margin.inner"/>
+      </xsl:call-template>
+    </xsl:variable>
 
     <w:document>
       <w:body>
@@ -87,13 +94,13 @@
 	<w:sectPr>
 	  <w:type w:val="nextPage"/>
 	  <w:pgSz w:w="{$page-width}" w:h="{$page-height}"/>
-	  <w:pgMar w:left="1134" w:right="1134"
+	  <w:pgMar w:left="{$inner-margin}" w:right="{$inner-margin}"
 		   w:header="0" w:top="1134" w:footer="1134"
 		   w:bottom="1698" w:gutter="0"/>
 	  <w:pgNumType w:fmt="decimal"/>
 	  <w:formProt w:val="false"/>
 	  <w:textDirection w:val="lrTb"/>
-	  <w:footerReference w:type="default" r:id="rId4"/>
+	  <w:footerReference w:type="default" r:id="rFooter"/>
 	</w:sectPr>
       </w:body>
     </w:document>
@@ -312,18 +319,37 @@
     </w:hyperlink>
   </xsl:template>
 
+  <xsl:template name="equation-content">
+    <xsl:choose>
+      <xsl:when test="mml:math">
+	<m:oMath>
+	  <xsl:apply-templates mode="mml"/>
+	</m:oMath>
+      </xsl:when>
+      <xsl:when test="db:mathphrase[@role='latex']">
+	<m:oMath>
+	  <xsl:apply-templates
+	      mode="mml"
+	      select="atl:latex2mml(db:mathphrase[@role='latex']/text())"/>
+	</m:oMath>
+      </xsl:when>
+      <xsl:when test="db:mathphrase">
+	<xsl:apply-templates/>
+      </xsl:when>
+      <xsl:otherwise>
+        <w:r><w:rPr><w:b/></w:rPr><w:t>unknown inline equation</w:t></w:r>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
+
   <xsl:template match="db:inlineequation">
-    <m:oMath>
-      <xsl:apply-templates mode="mml"/>
-    </m:oMath>
+    <xsl:call-template name="equation-content"/>
   </xsl:template>
 
   <xsl:template match="db:equation">
     <w:p>
       <w:pPr><w:pStyle w:val="Equation"/></w:pPr>
-      <m:oMath>
-	<xsl:apply-templates mode="mml"/>
-      </m:oMath>
+      <xsl:call-template name="equation-content"/>
       <xsl:call-template name="start-bookmark"/>
       <w:r>
 	<w:t>(<xsl:number level="any" count="db:equation"/>)</w:t>

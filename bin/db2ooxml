@@ -4,6 +4,7 @@
 import argparse
 import os.path
 import re
+import subprocess
 import sys
 
 #import PIL.Image
@@ -57,6 +58,19 @@ def media_ref(ctx, a):
 def single_spaces(ctx, a):
     return re.sub(r'\s+', ' ', str(a[0]))
 
+def latex2mml(ctx, txt):
+    if isinstance(txt,list):
+        txt = txt[0]
+    # Invoke the converter
+    args = ['/usr/bin/latexmlmath', txt]
+    p = subprocess.Popen(args, stdout=subprocess.PIPE)
+    print('sending', txt, 'to', p)
+    out,err = p.communicate()
+    # Parse the resulting XML
+    mml = lxml.etree.XML(out)
+    print(lxml.etree.tostring(mml))
+    return mml
+
 if __name__ == '__main__':
     ap = argparse.ArgumentParser(description='DocBook to OpenXML converter')
     ap.add_argument('input', metavar='DBDOC', nargs=1,
@@ -96,6 +110,7 @@ if __name__ == '__main__':
     ns['media-ref'] = media_ref
     ns['upper-case'] = upper_case
     ns['lower-case'] = lower_case
+    ns['latex2mml'] = latex2mml
     #e = lxml.etree.XPathEvaluator(db_doc)
     #print(e("atl:starts-with(' hello ', ' ')"))
 
