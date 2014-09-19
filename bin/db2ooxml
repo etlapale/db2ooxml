@@ -2,17 +2,20 @@
 # db2ooxml — Converts from DocBook to Office OpenXML documents
 
 import argparse
+import os
 import os.path
 import re
 import subprocess
 import sys
+import zipfile
 
 #import PIL.Image
 
 import lxml.etree
 
 
-atelo_ns = 'http://atelo.org/ns/db2ooxml'
+ATELO_NS = 'http://atelo.org/ns/db2ooxml'
+DOCBOOK_NS = 'http://docbook.org/ns/docbook'
 
 def upper_case(ctx, a):
     return a.upper()
@@ -59,6 +62,7 @@ def single_spaces(ctx, a):
     return re.sub(r'\s+', ' ', str(a[0]))
 
 def latex2mml(ctx, txt):
+    return []
     if isinstance(txt,list):
         txt = txt[0]
     # Invoke the converter
@@ -75,11 +79,23 @@ if __name__ == '__main__':
     ap = argparse.ArgumentParser(description='DocBook to OpenXML converter')
     ap.add_argument('input', metavar='DBDOC', nargs=1,
                     help='input DocBook document')
+    ap.add_argument('-f', '--force', default=False, action='store_true',
+                    help='force output overwritting')
     ap.add_argument('-o', '--output', default=None,
-                    help='output WordML document')
+                    help='output docx document')
     ap.add_argument('-p', '--paper-size', default='letter',
                     help='paper size (letter,a4,a5,…)')
     args = ap.parse_args()
+
+    # By default, just replace the extension by docx
+    if args.output is None:
+        args.output = os.path.splitext(os.path.basename(args.input[0]))[0] \
+                      + '.docx'
+    if os.path.exists(args.output):
+        if args.force:
+            os.unlink(args.output)
+        else:
+            exit('error: output file already exists (try with --force)')
 
     # Search for the XSLT stylesheets
     dirs = [os.path.dirname(os.path.dirname(os.path.realpath(__file__)))]
@@ -100,7 +116,7 @@ if __name__ == '__main__':
     db_doc = lxml.etree.parse(args.input[0])
 
     # Register extensions
-    ns = lxml.etree.FunctionNamespace(atelo_ns)
+    ns = lxml.etree.FunctionNamespace(ATELO_NS)
     ns.prefix = 'atl'
     ns['single-spaces'] = single_spaces
     ns['starts-with'] = starts_with
@@ -111,15 +127,45 @@ if __name__ == '__main__':
     ns['upper-case'] = upper_case
     ns['lower-case'] = lower_case
     ns['latex2mml'] = latex2mml
-    #e = lxml.etree.XPathEvaluator(db_doc)
-    #print(e("atl:starts-with(' hello ', ' ')"))
 
     # Transform the DocBook document to WordML
     wml_doc = transform(db_doc, **{'paper.type': "'%s'"%args.paper_size})
 
-    # Write the generated WordML document
-    if args.output is None:
-        output = sys.stdout
-    else:
-        output = open(args.output, 'w')
-    output.write(lxml.etree.tostring(wml_doc, encoding=str))
+    # Create the docx archive
+    inputdir = os.path.dirname(args.input[0])
+    ref_arcname = 'word/_rels/document.xml.rels'
+    img_reltype = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/image'
+    with zipfile.ZipFile(args.output, 'w', zipfile.ZIP_DEFLATED) as zf:
+        docx_path = os.path.join(basedir, 'docx')
+        # Write common files
+        for (root,_,files) in os.walk(docx_path):
+            for filename in files:
+                if filename.endswith('~'):
+                    continue
+                path = os.path.join(root, filename)
+                arcname = path[len(docx_path)+1:]
+                # Delay references
+                if arcname == ref_arcname:
+                    continue
+                zf.write(path, arcname)
+        # Write the generated WordML document
+        zf.writestr('word/document.xml', lxml.etree.tostring(wml_doc, encoding=str))
+        # Open the relations file
+        rels_path = os.path.join(basedir, 'docx', ref_arcname)
+        rels_doc = lxml.etree.parse(rels_path)
+        # Copy the media
+        media = db_doc.xpath("//db:imagedata[atl:ends-with(@fileref,'.png')]/@fileref", namespaces={'db': DOCBOOK_NS})
+        for m in set(media):
+            path = os.path.join(inputdir, m)
+            # Add the media to the docx archive
+            filename = os.path.basename(path)
+            zf.write(path, 'word/media/'+filename)
+            # Reference it
+            refname = media_ref(None, [filename])
+            ref_elem = lxml.etree.SubElement(rels_doc.getroot(),
+                                             'Relationship',
+                                             Id=refname,
+                                             Type=img_reltype,
+                                             Target='media/'+filename)
+        # Add the final references
+        zf.writestr(ref_arcname, lxml.etree.tostring(rels_doc, encoding=str))
