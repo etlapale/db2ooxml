@@ -1,4 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+ Copyright © 2014  Émilien Tlapale
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
 <xsl:stylesheet
     version="1.0"
     xmlns:db="http://docbook.org/ns/docbook"
@@ -61,6 +76,16 @@
 	<xsl:value-of select="$size"/>
       </xsl:otherwise>
     </xsl:choose>
+  </xsl:template>
+
+  <xsl:template name="to-emu">
+    <xsl:param name="size"/>
+    <xsl:variable name="emu">
+      <xsl:call-template name="to-twip">
+	<xsl:with-param name="size" select="$size"/>
+      </xsl:call-template>
+    </xsl:variable>
+    <xsl:value-of select="$emu * 635"/>
   </xsl:template>
 
   <!-- MathML to Office MML converter -->
@@ -414,10 +439,14 @@
     <xsl:variable name="wemu">
       <xsl:choose>
 	<xsl:when test="$imgdat/@width">
-	  <xsl:value-of select="atl:emu($imgdat/@width)"/>
+	  <xsl:call-template name="to-emu">
+	    <xsl:with-param name="size" select="$imgdat/@width"/>
+	  </xsl:call-template>
 	</xsl:when>
 	<xsl:otherwise>
-	  <xsl:value-of select="atl:emu(6.788)"/>
+	  <xsl:call-template name="to-emu">
+	    <xsl:with-param name="size" select="$page.width"/>
+	  </xsl:call-template>
 	</xsl:otherwise>
       </xsl:choose>
     </xsl:variable>

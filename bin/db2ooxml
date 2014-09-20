@@ -45,11 +45,6 @@ def starts_with(ctx, a, suffix):
         a = a[0]
     return a.startswith(suffix)
 
-def emu(ctx, a):
-    if isinstance(a,list):
-        a = float(a[0])
-    return int(a*914400)
-
 def emu_height(ctx, a, width):
     path = a[0]
     width = float(width[0])
@@ -74,7 +69,6 @@ def single_spaces(ctx, a):
     return re.sub(r'\s+', ' ', str(a[0]))
 
 def latex2mml(ctx, txt):
-    return []
     if isinstance(txt,list):
         txt = txt[0]
     # Invoke the converter
@@ -133,7 +127,6 @@ if __name__ == '__main__':
     ns['single-spaces'] = single_spaces
     ns['starts-with'] = starts_with
     ns['ends-with'] = ends_with
-    ns['emu'] = emu
     ns['emu-height'] = emu_height
     ns['media-ref'] = media_ref
     ns['upper-case'] = upper_case
