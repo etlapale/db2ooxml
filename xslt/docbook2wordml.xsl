@@ -435,7 +435,7 @@
   </xsl:template>
 
   <xsl:template match="db:figure">
-    <xsl:variable name="imgdat" select="db:mediaobject/db:imageobject/db:imagedata"/>
+    <xsl:variable name="imgdat" select="db:mediaobject/db:imageobject/db:imagedata[atl:ends-with(@fileref,'.png')]"/>
     <xsl:variable name="wemu">
       <xsl:choose>
 	<xsl:when test="$imgdat/@width">

@@ -48,12 +48,13 @@ def starts_with(ctx, a, suffix):
 def emu_height(ctx, a, width):
     path = a[0]
     width = float(width[0])
-    if path.endswith('.svg'):
-        svg = lxml.etree.parse(path)
-        root = svg.getroot()
-        w = float(root.get('width'))
-        h = float(root.get('height'))
-        del svg
+    if path.endswith('.png'):
+        # Check image size to maintain correct ratio
+        from PIL import Image
+        img = Image.open(path)
+        w,h = img.size
+        del img
+
         return int(h*width/w)
     else:
         print('warning: unhandled image type for', path, file=sys.stderr)
