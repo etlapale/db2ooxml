@@ -275,6 +275,36 @@
     </w:t></w:r>
   </xsl:template>
 
+  <!-- Optional paragraph division. -->
+  <xsl:template match="db:phrase">
+    <xsl:choose>
+      <!-- Added phrase -->
+      <xsl:when test="@revisionflag='added'">
+	<!-- Search for matching revision in ancestor revhistory -->
+	<xsl:variable name="revision"
+		      select="ancestor::*/db:info/db:revhistory/db:revision[db:revnumber/text()=current()/@revision]"/>
+	<xsl:element name="w:ins">
+	  <xsl:if test="$revision/db:date">
+	    <xsl:attribute name="w:date">
+	      <xsl:value-of select="atl:format-date($revision/db:date/text())"/>
+	    </xsl:attribute>
+	  </xsl:if>
+	  <xsl:if test="$revision/db:authorinitials">
+	    <xsl:attribute name="w:author">
+	      <xsl:value-of select="$revision/db:authorinitials"/>
+	    </xsl:attribute>
+	  </xsl:if>
+	  <!-- Change content -->
+	  <xsl:apply-templates/>
+	</xsl:element>
+      </xsl:when>
+      <!-- Unhandled phrase revisionflag -->
+      <xsl:otherwise>
+	<xsl:apply-templates/>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
+
   <xsl:template match="db:citation">
     <w:r><w:t> </w:t></w:r>
     <xsl:apply-templates/>

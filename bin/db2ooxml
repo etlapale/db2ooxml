@@ -16,6 +16,7 @@
 # limitations under the License.
 
 import argparse
+import datetime
 import os
 import os.path
 import re
@@ -70,6 +71,7 @@ def single_spaces(ctx, a):
     return re.sub(r'\s+', ' ', str(a[0]))
 
 def latex2mml(ctx, txt):
+    return []
     if isinstance(txt,list):
         txt = txt[0]
     # Invoke the converter
@@ -82,10 +84,28 @@ def latex2mml(ctx, txt):
     print(lxml.etree.tostring(mml))
     return mml
 
+iso8601_date = '%Y-%m-%d'
+iso8601_datetime_z = '%Y-%m-%dT%H:%M:%SZ'
+
+def format_date(ctx, txt):
+    '''
+    Convert a textual date to a proper timestamp.
+    '''
+    if isinstance(txt, list): txt = txt[0]
+    print(txt)
+    # Try some formats
+    try:
+        d = datetime.datetime.strptime(txt, iso8601_datetime_z)
+    except ValueError:
+        d = datetime.datetime.strptime(txt, iso8601_date)
+    return d.strftime(iso8601_datetime_z)
+
 if __name__ == '__main__':
     ap = argparse.ArgumentParser(description='DocBook to OpenXML converter')
     ap.add_argument('input', metavar='DBDOC', nargs=1,
                     help='input DocBook document')
+    ap.add_argument('-a', '--author', default=None,
+                    help='author for revision changes')
     ap.add_argument('-f', '--force', default=False, action='store_true',
                     help='force output overwritting')
     ap.add_argument('-o', '--output', default=None,
@@ -129,6 +149,7 @@ if __name__ == '__main__':
     ns['starts-with'] = starts_with
     ns['ends-with'] = ends_with
     ns['emu-height'] = emu_height
+    ns['format-date'] = format_date
     ns['media-ref'] = media_ref
     ns['upper-case'] = upper_case
     ns['lower-case'] = lower_case
@@ -175,3 +196,7 @@ if __name__ == '__main__':
                                              Target='media/'+filename)
         # Add the final references
         zf.writestr(ref_arcname, lxml.etree.tostring(rels_doc, encoding=str))
+
+# Local Variables:
+# mode: python
+# End:
