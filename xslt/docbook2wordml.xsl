@@ -55,6 +55,9 @@
   </xsl:param>
   <xsl:param name="page.margin.inner">1in</xsl:param>
 
+  <!-- Internal state parameters -->
+  <xsl:param name="revision-deleted" select="false"/>
+
   <!-- Convert a physical dimension to twips (1/1440 inches). -->
   <xsl:template name="to-twip">
     <xsl:param name="size"/>
@@ -265,14 +268,84 @@
     <w:r><w:t><xsl:value-of select="."/></w:t></w:r>
   </xsl:template>
 
-  <xsl:template match="text()">
-    <w:r><w:t>
-      <xsl:variable name="txt" select="atl:single-spaces(.)"/>
-      <xsl:if test="atl:starts-with($txt,' ') or atl:ends-with($txt,' ')">
-	<xsl:attribute name="xml:space">preserve</xsl:attribute>
+  <xsl:template name="base-text">
+    <xsl:variable name="txt" select="atl:single-spaces(.)"/>
+    <xsl:if test="atl:starts-with($txt,' ') or atl:ends-with($txt,' ')">
+      <xsl:attribute name="xml:space">preserve</xsl:attribute>
+    </xsl:if>
+    <xsl:value-of select="$txt"/>
+  </xsl:template>
+
+  <xsl:template name="revised-text">
+    <xsl:param name="revtag"/>
+    <xsl:param name="revttag"/>
+    <xsl:param name="revision"/>
+
+    <xsl:element name="{$revtag}">
+      <xsl:if test="$revision/db:date">
+	<xsl:attribute name="w:date">
+	  <xsl:value-of select="atl:format-date($revision/db:date/text())"/>
+	</xsl:attribute>
       </xsl:if>
-      <xsl:value-of select="$txt"/>
-    </w:t></w:r>
+      <xsl:if test="$revision/db:authorinitials">
+	<xsl:attribute name="w:author">
+	  <xsl:value-of select="$revision/db:authorinitials"/>
+	</xsl:attribute>
+      </xsl:if>
+      <w:r><xsl:element name="{$revttag}">
+	<xsl:call-template name="base-text"/>
+      </xsl:element></w:r>
+    </xsl:element>
+  </xsl:template>
+
+  <xsl:template match="text()">
+    <xsl:param name="revision"/>
+    <xsl:param name="revisionflag"/>
+    <xsl:choose>
+      <xsl:when test="$revisionflag='added'">
+	<xsl:call-template name="revised-text">
+	  <xsl:with-param name="revision" select="$revision"/>
+	  <xsl:with-param name="revtag" select="'w:ins'"/>
+	  <xsl:with-param name="revttag" select="'w:t'"/>
+	</xsl:call-template>
+      </xsl:when>
+      <xsl:when test="$revisionflag='deleted'">
+	<xsl:call-template name="revised-text">
+	  <xsl:with-param name="revision" select="$revision"/>
+	  <xsl:with-param name="revtag" select="'w:del'"/>
+	  <xsl:with-param name="revttag" select="'w:delText'"/>
+	</xsl:call-template>
+      </xsl:when>
+      <xsl:otherwise>
+	<w:r><w:t>
+	  <xsl:call-template name="base-text"/>
+	</w:t></w:r>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
+
+  <xsl:template name="revision-tag">
+    <!-- Search for matching revision in ancestor revhistory -->
+    <xsl:variable name="revision"
+		  select="ancestor::*/db:info/db:revhistory/db:revision[db:revnumber/text()=current()/@revision]"/>
+    <!-- Change content -->
+    <xsl:choose>
+      <xsl:when test="@revisionflag='added'">
+	<xsl:apply-templates>
+	  <xsl:with-param name="revision" select="$revision"/>
+	  <xsl:with-param name="revisionflag" select="@revisionflag"/>
+	</xsl:apply-templates>
+      </xsl:when>
+      <xsl:when test="@revisionflag='deleted'">
+	<xsl:apply-templates>
+	  <xsl:with-param name="revision" select="$revision"/>
+	  <xsl:with-param name="revisionflag" select="@revisionflag"/>
+	</xsl:apply-templates>
+      </xsl:when>
+      <xsl:otherwise>
+	<xsl:apply-templates/>
+      </xsl:otherwise>
+    </xsl:choose>
   </xsl:template>
 
   <!-- Optional paragraph division. -->
@@ -280,23 +353,11 @@
     <xsl:choose>
       <!-- Added phrase -->
       <xsl:when test="@revisionflag='added'">
-	<!-- Search for matching revision in ancestor revhistory -->
-	<xsl:variable name="revision"
-		      select="ancestor::*/db:info/db:revhistory/db:revision[db:revnumber/text()=current()/@revision]"/>
-	<xsl:element name="w:ins">
-	  <xsl:if test="$revision/db:date">
-	    <xsl:attribute name="w:date">
-	      <xsl:value-of select="atl:format-date($revision/db:date/text())"/>
-	    </xsl:attribute>
-	  </xsl:if>
-	  <xsl:if test="$revision/db:authorinitials">
-	    <xsl:attribute name="w:author">
-	      <xsl:value-of select="$revision/db:authorinitials"/>
-	    </xsl:attribute>
-	  </xsl:if>
-	  <!-- Change content -->
-	  <xsl:apply-templates/>
-	</xsl:element>
+	<xsl:call-template name="revision-tag"/>
+      </xsl:when>
+      <!-- Deleted phrase -->
+      <xsl:when test="@revisionflag='deleted'">
+	<xsl:call-template name="revision-tag"/>
       </xsl:when>
       <!-- Unhandled phrase revisionflag -->
       <xsl:otherwise>
@@ -306,14 +367,24 @@
   </xsl:template>
 
   <xsl:template match="db:citation">
+    <xsl:param name="revision"/>
+    <xsl:param name="revisionflag"/>
     <w:r><w:t> </w:t></w:r>
-    <xsl:apply-templates/>
+    <xsl:apply-templates>
+      <xsl:with-param name="revision" select="$revision"/>
+      <xsl:with-param name="revisionflag" select="$revisionflag"/>
+    </xsl:apply-templates>
     <w:r><w:t> </w:t></w:r>
   </xsl:template>
 
   <xsl:template match="db:link">
+    <xsl:param name="revision"/>
+    <xsl:param name="revisionflag"/>
     <w:hyperlink w:anchor="{@linkend}">
-      <xsl:apply-templates/>
+      <xsl:apply-templates>
+	<xsl:with-param name="revision" select="$revision"/>
+	<xsl:with-param name="revisionflag" select="$revisionflag"/>
+      </xsl:apply-templates>
     </w:hyperlink>
   </xsl:template>
 

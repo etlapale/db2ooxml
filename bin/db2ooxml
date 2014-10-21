@@ -92,7 +92,6 @@ def format_date(ctx, txt):
     Convert a textual date to a proper timestamp.
     '''
     if isinstance(txt, list): txt = txt[0]
-    print(txt)
     # Try some formats
     try:
         d = datetime.datetime.strptime(txt, iso8601_datetime_z)
@@ -104,8 +103,6 @@ if __name__ == '__main__':
     ap = argparse.ArgumentParser(description='DocBook to OpenXML converter')
     ap.add_argument('input', metavar='DBDOC', nargs=1,
                     help='input DocBook document')
-    ap.add_argument('-a', '--author', default=None,
-                    help='author for revision changes')
     ap.add_argument('-f', '--force', default=False, action='store_true',
                     help='force output overwritting')
     ap.add_argument('-o', '--output', default=None,
