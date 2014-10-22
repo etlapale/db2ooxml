@@ -256,12 +256,13 @@
   </xsl:template>
 
   <xsl:template match="db:emphasis">
-    <w:r>
-      <w:rPr>
-	<w:i />
-      </w:rPr>
-      <w:t><xsl:value-of select="normalize-space()"/></w:t>
-    </w:r>
+    <xsl:param name="revision"/>
+    <xsl:param name="revisionflag"/>
+    <xsl:apply-templates>
+      <xsl:with-param name="revision" select="$revision"/>
+      <xsl:with-param name="revisionflag" select="$revisionflag"/>
+      <xsl:with-param name="font-style" select="'italic'"/>
+    </xsl:apply-templates>
   </xsl:template>
 
   <xsl:template match="db:bibliomixed/text()">
@@ -277,6 +278,7 @@
   </xsl:template>
 
   <xsl:template name="revised-text">
+    <xsl:param name="font-style"/>
     <xsl:param name="revtag"/>
     <xsl:param name="revttag"/>
     <xsl:param name="revision"/>
@@ -292,13 +294,17 @@
 	  <xsl:value-of select="$revision/db:authorinitials"/>
 	</xsl:attribute>
       </xsl:if>
-      <w:r><xsl:element name="{$revttag}">
-	<xsl:call-template name="base-text"/>
-      </xsl:element></w:r>
+      <w:r>
+	<xsl:if test="$font-style = 'italic'"><w:rPr><w:i/></w:rPr></xsl:if>
+	<xsl:element name="{$revttag}">
+	  <xsl:call-template name="base-text"/>
+	</xsl:element>
+      </w:r>
     </xsl:element>
   </xsl:template>
 
   <xsl:template match="text()">
+    <xsl:param name="font-style"/>
     <xsl:param name="revision"/>
     <xsl:param name="revisionflag"/>
     <xsl:choose>
@@ -307,6 +313,7 @@
 	  <xsl:with-param name="revision" select="$revision"/>
 	  <xsl:with-param name="revtag" select="'w:ins'"/>
 	  <xsl:with-param name="revttag" select="'w:t'"/>
+	  <xsl:with-param name="font-style" select="$font-style"/>
 	</xsl:call-template>
       </xsl:when>
       <xsl:when test="$revisionflag='deleted'">
@@ -314,17 +321,22 @@
 	  <xsl:with-param name="revision" select="$revision"/>
 	  <xsl:with-param name="revtag" select="'w:del'"/>
 	  <xsl:with-param name="revttag" select="'w:delText'"/>
+	  <xsl:with-param name="font-style" select="$font-style"/>
 	</xsl:call-template>
       </xsl:when>
       <xsl:otherwise>
-	<w:r><w:t>
-	  <xsl:call-template name="base-text"/>
-	</w:t></w:r>
+	<w:r>
+	  <xsl:if test="$font-style = 'italic'"><w:rPr><w:i/></w:rPr></xsl:if>
+	  <w:t>
+	    <xsl:call-template name="base-text"/>
+	  </w:t>
+	</w:r>
       </xsl:otherwise>
     </xsl:choose>
   </xsl:template>
 
   <xsl:template name="revision-tag">
+    <xsl:param name="font-style"/>
     <!-- Search for matching revision in ancestor revhistory -->
     <xsl:variable name="revision"
 		  select="ancestor::*/db:info/db:revhistory/db:revision[db:revnumber/text()=current()/@revision]"/>
@@ -334,12 +346,14 @@
 	<xsl:apply-templates>
 	  <xsl:with-param name="revision" select="$revision"/>
 	  <xsl:with-param name="revisionflag" select="@revisionflag"/>
+	  <xsl:with-param name="font-style" select="$font-style"/>
 	</xsl:apply-templates>
       </xsl:when>
       <xsl:when test="@revisionflag='deleted'">
 	<xsl:apply-templates>
 	  <xsl:with-param name="revision" select="$revision"/>
 	  <xsl:with-param name="revisionflag" select="@revisionflag"/>
+	  <xsl:with-param name="font-style" select="$font-style"/>
 	</xsl:apply-templates>
       </xsl:when>
       <xsl:otherwise>
@@ -350,18 +364,25 @@
 
   <!-- Optional paragraph division. -->
   <xsl:template match="db:phrase">
+    <xsl:param name="font-style"/>
     <xsl:choose>
       <!-- Added phrase -->
       <xsl:when test="@revisionflag='added'">
-	<xsl:call-template name="revision-tag"/>
+	<xsl:call-template name="revision-tag">
+	  <xsl:with-param name="font-style" select="$font-style"/>
+	</xsl:call-template>
       </xsl:when>
       <!-- Deleted phrase -->
       <xsl:when test="@revisionflag='deleted'">
-	<xsl:call-template name="revision-tag"/>
+	<xsl:call-template name="revision-tag">
+	  <xsl:with-param name="font-style" select="$font-style"/>
+	</xsl:call-template>
       </xsl:when>
       <!-- Unhandled phrase revisionflag -->
       <xsl:otherwise>
-	<xsl:apply-templates/>
+	<xsl:apply-templates>
+	  <xsl:with-param name="font-style" select="$font-style"/>
+	</xsl:apply-templates>
       </xsl:otherwise>
     </xsl:choose>
   </xsl:template>
@@ -406,6 +427,8 @@
   </xsl:template>
 
   <xsl:template match="db:xref">
+    <xsl:param name="revision"/>
+    <xsl:param name="revisionflag"/>
     <xsl:variable name="target"
 		  select="//*[@xml:id=current()/@linkend]"/>
     <xsl:variable name="number">

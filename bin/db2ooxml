@@ -71,7 +71,6 @@ def single_spaces(ctx, a):
     return re.sub(r'\s+', ' ', str(a[0]))
 
 def latex2mml(ctx, txt):
-    return []
     if isinstance(txt,list):
         txt = txt[0]
     # Invoke the converter
