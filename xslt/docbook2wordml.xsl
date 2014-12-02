@@ -117,7 +117,7 @@
 	<!-- Frontmatter -->
         <xsl:apply-templates select="db:info"/>
 	<!-- Content -->
-        <xsl:apply-templates select="db:sect1|db:bibliography"/>
+        <xsl:apply-templates select="db:section|db:sect1|db:bibliography"/>
 	<!-- Section format -->
 	<w:sectPr>
 	  <w:type w:val="nextPage"/>
@@ -193,31 +193,34 @@
   </xsl:template>
 
   <!-- Higher level section -->
-  <xsl:template match="db:sect1">
+  <xsl:template match="db:sect1|db:section[count(ancestor::db:section)=0]">
     <!-- Heading -->
     <w:p>
       <w:pPr><w:pStyle w:val="Heading1"/></w:pPr>
       <xsl:call-template name="start-bookmark"/>
       <w:r><w:t>
-        <xsl:number level="multiple" count="db:sect1"/>
+        <xsl:number level="multiple"
+		    count="db:sect1|db:section[count(ancestor::db:section)=0]"/>
 	<xsl:text> </xsl:text>
 	<xsl:value-of select="db:title"/>
       </w:t></w:r>
       <xsl:call-template name="end-bookmark"/>
     </w:p>
     <!-- Content -->
-    <xsl:apply-templates select="db:equation|db:figure|db:para|db:sect2|db:table"/>
+    <xsl:apply-templates select="db:equation|db:figure|db:para|db:section|db:sect2|db:table"/>
   </xsl:template>
 
-  <xsl:template match="db:sect2">
+  <xsl:template match="db:sect2|db:section[count(ancestor::db:section)=1]">
     <!-- Heading -->
     <w:p>
       <w:pPr><w:pStyle w:val="Heading2"/></w:pPr>
       <xsl:call-template name="start-bookmark"/>
       <w:r><w:t>
-        <xsl:number level="multiple" count="db:sect1"/>
+        <xsl:number level="multiple"
+		    count="db:sect1|db:section[count(ancestor::db:section)=0]"/>
 	<xsl:text>.</xsl:text>
-        <xsl:number level="multiple" count="db:sect2"/>
+        <xsl:number level="multiple"
+		    count="db:sect2|db:section[count(ancestor::db:section)=1]"/>
 	<xsl:text> </xsl:text>
 	<xsl:value-of select="db:title"/>
       </w:t></w:r>
