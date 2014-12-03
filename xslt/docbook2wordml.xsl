@@ -273,7 +273,30 @@
   </xsl:template>
 
   <xsl:template name="base-text">
-    <xsl:variable name="txt" select="atl:single-spaces(.)"/>
+    <xsl:variable name="txt">
+      <xsl:choose>
+	<!-- Remove leading spaces on first child -->
+	<xsl:when test="position()=1">
+	  <xsl:choose>
+	    <!-- and trailing spaces if also last child -->
+	    <xsl:when test="position()=last()">
+	      <xsl:value-of select="atl:strip(atl:single-spaces(.))"/>
+	    </xsl:when>
+	    <xsl:otherwise>
+	      <xsl:value-of select="atl:lstrip(atl:single-spaces(.))"/>
+	    </xsl:otherwise>
+	  </xsl:choose>
+	</xsl:when>
+	<!-- Remove trailing spaces on last child -->
+	<xsl:when test="position()=last()">
+	  <xsl:value-of select="atl:rstrip(atl:single-spaces(.))"/>
+	</xsl:when>
+	<xsl:otherwise>
+	  <xsl:value-of select="atl:single-spaces(.)"/>
+	</xsl:otherwise>
+      </xsl:choose>
+    </xsl:variable>
+    <!-- Preserve leading and trailing spaces -->
     <xsl:if test="atl:starts-with($txt,' ') or atl:ends-with($txt,' ')">
       <xsl:attribute name="xml:space">preserve</xsl:attribute>
     </xsl:if>
