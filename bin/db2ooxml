@@ -38,11 +38,13 @@ def lower_case(ctx, a):
 
 def ends_with(ctx, a, suffix):
     if isinstance(a,list):
+        if len(a) == 0: return False
         a = a[0]
     return a.endswith(suffix)
 
 def starts_with(ctx, a, suffix):
     if isinstance(a,list):
+        if len(a) == 0: return False
         a = a[0]
     return a.startswith(suffix)
 
@@ -85,18 +87,20 @@ def rstrip(ctx, a):
         a = a[0]
     return str(a).rstrip()
 
-def latex2mml(ctx, txt):
-    if isinstance(txt,list):
-        txt = txt[0]
-    # Invoke the converter
-    args = ['/usr/bin/latexmlmath', txt]
-    p = subprocess.Popen(args, stdout=subprocess.PIPE)
-    print('sending', txt, 'to', p)
-    out,err = p.communicate()
-    # Parse the resulting XML
-    mml = lxml.etree.XML(out)
-    print(lxml.etree.tostring(mml))
-    return mml
+def latex2mml(cmd):
+    def func(ctx, txt):
+        if isinstance(txt,list):
+            txt = txt[0]
+        # Invoke the converter
+        args = [cmd, txt]
+        p = subprocess.Popen(args, stdout=subprocess.PIPE)
+        print('sending', txt, 'to', p)
+        out,err = p.communicate()
+        # Parse the resulting XML
+        mml = lxml.etree.XML(out)
+        print(lxml.etree.tostring(mml))
+        return mml
+    return func
 
 iso8601_date = '%Y-%m-%d'
 iso8601_datetime_z = '%Y-%m-%dT%H:%M:%SZ'
@@ -119,6 +123,8 @@ if __name__ == '__main__':
                     help='input DocBook document')
     ap.add_argument('-f', '--force', default=False, action='store_true',
                     help='force output overwritting')
+    ap.add_argument('-l', '--latex2mml', default=None,
+                    help='converter from LaTeX equations to MathML')
     ap.add_argument('-o', '--output', default=None,
                     help='output docx document')
     ap.add_argument('-p', '--paper-size', default='letter',
@@ -134,6 +140,10 @@ if __name__ == '__main__':
             os.unlink(args.output)
         else:
             exit('error: output file already exists (try with --force)')
+            
+    # Try to find a LaTeX to MathML converter
+    if args.latex2mml is None:
+        args.latex2mml = '/usr/bin/latexmlmath'
 
     # Search for the XSLT stylesheets
     dirs = [os.path.dirname(os.path.dirname(os.path.realpath(__file__)))]
@@ -167,7 +177,7 @@ if __name__ == '__main__':
     ns['media-ref'] = media_ref
     ns['upper-case'] = upper_case
     ns['lower-case'] = lower_case
-    ns['latex2mml'] = latex2mml
+    ns['latex2mml'] = latex2mml(args.latex2mml)
 
     # Transform the DocBook document to WordML
     wml_doc = transform(db_doc, **{'paper.type': "'%s'"%args.paper_size})
