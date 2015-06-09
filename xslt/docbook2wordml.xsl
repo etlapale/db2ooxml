@@ -140,9 +140,12 @@
     <w:p>
       <w:pPr><w:pStyle w:val="Author"/></w:pPr>
       <w:r><w:t>
-        <xsl:value-of select="db:personname/db:firstname"/>
+	<xsl:for-each select="db:personname//text()">
+	  <xsl:value-of select="."/>
+	</xsl:for-each>
+        <!-- <xsl:value-of select="db:personname/db:firstname"/>
 	<xsl:text> </xsl:text>
-        <xsl:value-of select="db:personname/db:surname"/>
+        <xsl:value-of select="db:personname/db:surname"/> -->
       </w:t></w:r>
     </w:p>
   </xsl:template>
